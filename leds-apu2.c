@@ -58,7 +58,6 @@ static DEFINE_SPINLOCK (gpio_lock);
 /* the watchdog platform device */
 static struct platform_device *gpio_apu2_platform_device;
 static struct platform_device *leddev;
-static struct platform_device *keydev;
 
 static const struct pci_device_id gpio_apu2_pci_tbl[] ={
 	{PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, PCI_ANY_ID, PCI_ANY_ID},
@@ -245,53 +244,6 @@ static struct gpio_led apu2_leds_gpio[] = {
         },
 };
 
-static struct gpio_keys_button apu2_gpio_keys[] = {
-	{
-		.desc           = "Reset button",
-		.type           = EV_KEY,
-		.code           = KEY_RESTART,
-		.debounce_interval = 60,
-		.gpio           = 508,
-		.active_low     = 1,
-	},
-};
-
-static void register_gpio_keys_polled(int id, unsigned poll_interval,
-				      unsigned nbuttons,
-				      struct gpio_keys_button *buttons)
-{
-	struct gpio_keys_platform_data pdata = { };
-	int err;
-
-	keydev = platform_device_alloc("gpio-keys-polled", id);
-	if (!keydev) {
-		printk(KERN_ERR "Failed to allocate gpio-keys platform device\n");
-		return;
-	}
-
-	pdata.poll_interval = poll_interval;
-	pdata.nbuttons = nbuttons;
-	pdata.buttons = buttons;
-
-	err = platform_device_add_data(keydev, &pdata, sizeof(pdata));
-	if (err) {
-		dev_err(&keydev->dev, "failed to add platform data to key driver (%d)", err);
-		goto err_put_pdev;
-	}
-
-	err = platform_device_add(keydev);
-	if (err) {
-		dev_err(&keydev->dev, "failed to register key platform device (%d)", err);
-		goto err_put_pdev;
-	}
-
-	return;
-
-err_put_pdev:
-	platform_device_put(keydev);
-	keydev = NULL;
-}
-
 static void register_leds_gpio(int id, unsigned num_leds, struct gpio_led *leds)
 {
 	struct gpio_led_platform_data pdata = { };
@@ -344,13 +296,6 @@ static int __init gpio_apu2_init (void)
 		goto exit;
 	}
 
-	pr_info ("%s: request Polled GPIO Buttons driver module\n", DEVNAME);
-
-	if (request_module("gpio-keys-polled")) {
-		err = -ENODEV;
-		goto exit;
-	}
-
 	pr_info ("%s: load APU2/LED GPIO driver module\n", DEVNAME);
 
 	err = platform_driver_register (&gpio_apu2_driver);
@@ -366,7 +311,7 @@ static int __init gpio_apu2_init (void)
 	pr_info ("%s: APU2 GPIO/LED driver module loaded\n", DEVNAME);
 
 	register_leds_gpio(-1, ARRAY_SIZE(apu2_leds_gpio), apu2_leds_gpio);
-	register_gpio_keys_polled(-1, 20, ARRAY_SIZE(apu2_gpio_keys), apu2_gpio_keys);
+	
 	return 0;
 
 exit_driver:
@@ -379,7 +324,6 @@ static void __exit gpio_apu2_exit (void)
 {
 	platform_device_unregister (gpio_apu2_platform_device);
 	platform_device_unregister (leddev);
-	platform_device_unregister (keydev);
 	platform_driver_unregister (&gpio_apu2_driver);
 	pr_info ("%s: APU2 GPIO/LED driver module unloaded\n", DEVNAME);
 }
