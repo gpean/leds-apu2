@@ -284,7 +284,8 @@ static int __init gpio_apu2_init (void)
 	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
 
 	/* Match the device name/model */
-	if (!board_name || !board_vendor || strcasecmp(board_vendor, "PC Engines") || (strcasecmp(board_name, "apu2") && strcasecmp(board_name, "apu2"))) {
+	if (!board_name || !board_vendor || strcasecmp(board_vendor, "PC Engines") || 
+            (strcasecmp(board_name, "PC Engines apu2") && strcasecmp(board_name, "apu2"))) {
 		printk(KERN_ERR "Unsupported board vendor/name: %s/%s\n", 
                 board_vendor ? board_vendor : "NULL", 
                 board_name ? board_name : "NULL");
