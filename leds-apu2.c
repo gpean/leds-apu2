@@ -284,14 +284,18 @@ static int __init gpio_apu2_init (void)
 	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
 
 	/* Match the device name/model */
-	if (!board_name || !board_vendor || strcasecmp(board_vendor, "PC Engines") || strcasecmp(board_name, "apu2")) {
-		err = -ENODEV;
+	if (!board_name || !board_vendor || strcasecmp(board_vendor, "PC Engines") || (strcasecmp(board_name, "apu2") && strcasecmp(board_name, "apu2"))) {
+		printk(KERN_ERR "Unsupported board vendor/name: %s/%s\n", 
+                board_vendor ? board_vendor : "NULL", 
+                board_name ? board_name : "NULL");
+        err = -ENODEV;
 		goto exit;
 	}
 
 	pr_info ("%s: request GPIO LED driver module\n", DEVNAME);
 
 	if (request_module("leds-gpio")) {
+        printk(KERN_ERR "leds-gpio module not loaded");
 		err = -ENODEV;
 		goto exit;
 	}
